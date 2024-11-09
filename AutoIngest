@@ -1,0 +1,208 @@
+import React, { useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Database, Table, Columns, AlertCircle, Check, Bell } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+
+const BasicModeInterface = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedSource, setSelectedSource] = useState('');
+  const [selectedTables, setSelectedTables] = useState([]);
+  const [selectAllTables, setSelectAllTables] = useState(false);
+  const [skipColumnSelection, setSkipColumnSelection] = useState(false);
+  const [tableSchemaSettings, setTableSchemaSettings] = useState({});
+  const [globalSchemaOption, setGlobalSchemaOption] = useState('');
+  const [useGlobalSchema, setUseGlobalSchema] = useState(true);
+  
+  // Sample data
+  const dataSources = [
+    { id: 'oracle1', name: 'Oracle ERP', type: 'database' },
+    { id: 'salesforce1', name: 'Salesforce CRM', type: 'crm' },
+    { id: 'sap1', name: 'SAP System', type: 'erp' }
+  ];
+
+  const tables = [
+    { id: 'customers', name: 'Customers', objectType: 'Table' },
+    { id: 'orders', name: 'Orders', objectType: 'Table' },
+    { id: 'products', name: 'Products', objectType: 'Table' },
+    { id: 'invoices', name: 'Invoices', objectType: 'View' },
+    { id: 'shipments', name: 'Shipments', objectType: 'Table' }
+  ];
+
+  const columns = {
+    customers: [
+      { id: 'customer_id', name: 'Customer ID', type: 'number' },
+      { id: 'customer_name', name: 'Customer Name', type: 'string' }
+    ],
+    orders: [
+      { id: 'order_id', name: 'Order ID', type: 'number' },
+      { id: 'order_date', name: 'Order Date', type: 'date' }
+    ]
+  };
+
+  const handleTableSelection = (tableId) => {
+    const newSelection = selectedTables.includes(tableId)
+      ? selectedTables.filter(id => id !== tableId)
+      : [...selectedTables, tableId];
+    setSelectedTables(newSelection);
+    setSelectAllTables(newSelection.length === tables.length);
+  };
+
+  const handleSelectAllTables = () => {
+    const newSelectAll = !selectAllTables;
+    setSelectAllTables(newSelectAll);
+    setSelectedTables(newSelectAll ? tables.map(t => t.id) : []);
+  };
+
+  const handleSchemaOptionChange = (tableId, option) => {
+    if (useGlobalSchema) {
+      setGlobalSchemaOption(option);
+    } else {
+      setTableSchemaSettings({
+        ...tableSchemaSettings,
+        [tableId]: option
+      });
+    }
+  };
+
+  const renderDataSourceStep = () => (
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Step 1: Select Data Source</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {dataSources.map((source) => (
+          <div
+            key={source.id}
+            className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+              selectedSource === source.id ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
+            }`}
+            onClick={() => setSelectedSource(source.id)}
+          >
+            <div className="flex items-center gap-3">
+              <Database className="w-6 h-6 text-blue-500" />
+              <div>
+                <p className="font-medium">{source.name}</p>
+                <p className="text-sm text-gray-500 capitalize">{source.type}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderTableSelectionStep = () => (
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Step 2: Select Tables/Objects</h3>
+      
+      <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={selectAllTables}
+            onChange={handleSelectAllTables}
+            className="w-4 h-4"
+          />
+          <span className="font-medium">Select All Tables/Objects</span>
+        </div>
+        <span className="text-sm text-gray-600">
+          {selectedTables.length} of {tables.length} selected
+        </span>
+      </div>
+
+      <div className="grid gap-2">
+        {tables.map((table) => (
+          <div
+            key={table.id}
+            className={`p-4 border rounded-lg cursor-pointer ${
+              selectedTables.includes(table.id) ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={selectedTables.includes(table.id)}
+                onChange={() => handleTableSelection(table.id)}
+                className="w-4 h-4"
+              />
+              <Table className="w-6 h-6 text-blue-500" />
+              <div>
+                <span className="font-medium">{table.name}</span>
+                <span className="text-sm text-gray-500 ml-2">({table.objectType})</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1: return renderDataSourceStep();
+      case 2: return renderTableSelectionStep();
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="w-full max-w-4xl mx-auto p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Configure Data Processing</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              {[1, 2].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    step === currentStep ? 'bg-blue-500 text-white'
+                      : step < currentStep ? 'bg-green-500 text-white'
+                      : 'bg-gray-200'
+                  }`}>
+                    {step < currentStep ? <Check className="w-5 h-5" /> : step}
+                  </div>
+                  {step < 2 && (
+                    <div className="w-full h-1 mx-2 bg-gray-200">
+                      {step < currentStep && <div className="h-full bg-green-500" />}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {renderStep()}
+
+            <div className="flex justify-between mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(currentStep - 1)}
+                disabled={currentStep === 1}
+              >
+                Back
+              </Button>
+              <Button
+                onClick={() => {
+                  if (currentStep < 2) {
+                    setCurrentStep(currentStep + 1);
+                  } else {
+                    console.log('Configuration complete', {
+                      selectedSource,
+                      selectedTables,
+                      skipColumnSelection,
+                      schemaSettings: useGlobalSchema ? globalSchemaOption : tableSchemaSettings
+                    });
+                  }
+                }}
+              >
+                {currentStep === 2 ? 'Complete' : 'Next'}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default BasicModeInterface;
